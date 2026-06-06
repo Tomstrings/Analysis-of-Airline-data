@@ -1,0 +1,126 @@
+-- PERSONAL TASK 3: ANALYSIS OF AIRLINE DATASET
+-- BEGINNING OF THE SCRIPT
+-- DATE OF CREATION: 07/03/2026
+-- DATE LAST MODIFIED: 11/03/2026
+-- Tasks
+-- 1. Create a Database in PostgreSQL named "Airline_Dataset_db"
+-- 2. Create an appropriate table structure named "airline_data_tb" and import the entire data 
+-- from the "Airline Dataset Updated v2.csv" file
+-- 3. You are to provide the management of the airline data analysis of the dataset and 
+-- also provide some visual representation, write at least 5 SQL commands/statements 
+-- to extract the required information
+
+-- Creating the table for airline_data
+DROP TABLE IF EXISTS airline_data_tb;
+
+CREATE TABLE airline_data_tb(
+Passenger_ID CHAR(6) NOT NULL,
+first_name VARCHAR(25),
+last_name VARCHAR(25),
+gender VARCHAR(10),
+age SMALLINT,
+nationality VARCHAR(50),
+airport_name VARCHAR(100),
+airport_country_code CHAR(2),
+country_name VARCHAR(50),
+airport_continent VARCHAR(5),
+continents VARCHAR(20),
+departure_date DATE,
+arrival_airport VARCHAR(5),
+pilot_name VARCHAR(50),
+flight_status VARCHAR(15)
+);
+
+-- Ensuring that the table is completely Empty
+TRUNCATE airline_data_tb;
+
+-- display the structure of the airline data table created
+SELECT * FROM airline_data_tb;
+
+-- loading the first batch of data from the csv file
+COPY airline_data_tb
+FROM 'C:\ProgramData\MySQL\MySQL Server 8.0\Uploads\input_files\Airline_Dataset_v2.csv'
+WITH (FORMAT csv, HEADER); -- 98,619 RECORDS LOADED INTO THE TABLE
+
+
+
+-- confirming the total number of records imported into the table
+SELECT COUNT(*) 
+FROM airline_data_tb; -- 98,619 records comfirmed 
+
+-- taking a peep into the records
+SELECT * 
+FROM airline_data_tb
+LIMIT 5;
+
+-- ANALYSIS OF THE AIRLINE DATA
+-- 1. Number of Passengers from United States aged 80 or above
+SELECT *
+FROM airline_data_tb
+WHERE nationality LIKE '%United States%' AND age>=80
+LIMIT 10;
+
+-- 2. Number of Male and Female Passengers
+SELECT gender, COUNT(*) AS No_of_Passengers
+FROM airline_data_tb
+GROUP BY gender
+ORDER BY gender DESC;
+
+-- 3. Count by flight status (e.g., On Time, Delayed, Cancelled)
+SELECT flight_status, COUNT(*) AS count
+FROM airline_data_tb
+GROUP BY flight_status
+ORDER BY count DESC;
+
+-- 4. Passenger coverage: unique passengers per nationality and top 10 nationalities
+SELECT nationality, COUNT(DISTINCT passenger_id) AS unique_passengers
+FROM airline_data_tb
+GROUP BY nationality
+ORDER BY unique_passengers DESC
+LIMIT 10;
+
+-- 5. Top 10 departure airports by volume
+SELECT airport_name, COUNT(*) AS departures
+FROM airline_data_tb
+GROUP BY airport_name
+ORDER BY departures DESC
+LIMIT 10;
+
+-- 6. Top 10 arrivals airports by volume
+SELECT arrival_airport, COUNT(*) AS Arrivals
+FROM airline_data_tb
+GROUP BY arrival_airport
+ORDER BY Arrivals DESC
+LIMIT 10;
+
+-- 7. On-time performance by departure airport - top 10 airports
+SELECT airport_name,
+       SUM(CASE WHEN flight_status = 'On Time' THEN 1 ELSE 0 END) AS on_time,
+       SUM(CASE WHEN flight_status = 'Delayed' THEN 1 ELSE 0 END) AS delayed,
+       SUM(CASE WHEN flight_status = 'Cancelled' THEN 1 ELSE 0 END) AS cancelled,
+       COUNT(*) AS total_flights,
+       ROUND(AVG(CASE WHEN flight_status = 'On Time' THEN 1.0 ELSE 0 END) * 100, 2) AS on_time_pct
+FROM airline_data_tb
+GROUP BY airport_name
+ORDER BY on_time_pct DESC
+LIMIT 10;
+
+-- 8. Number of flight departures by month
+SELECT EXTRACT(MONTH FROM departure_date) AS month,
+       COUNT(*) AS flights
+FROM airline_data_tb
+GROUP BY month
+ORDER BY month;
+
+-- 9. Most experienced pilots based on number of flights piloted (top 10)
+SELECT pilot_name, COUNT(*) AS flights_piloted
+FROM airline_data_tb
+GROUP BY pilot_name
+ORDER BY flights_piloted DESC
+LIMIT 10;
+
+-- 10. Number of flights by airport continent (aggregate scope)
+SELECT airport_continent, COUNT(*) AS flights
+FROM airline_data_tb
+GROUP BY airport_continent
+ORDER BY flights DESC;
